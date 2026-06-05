@@ -1,0 +1,16 @@
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.ipynb_checkpoints
+.git
+.gitignore
+.env
+data
+notebooks
+agent-tools
+*.sqlite3
+*.db
+*.log
