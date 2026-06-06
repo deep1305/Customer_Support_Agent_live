@@ -17,14 +17,14 @@ class Settings(BaseSettings):
     app_name: str = "AI Copilot for Support Agents"
 
     groq_api_key: str = ""
-    groq_model: str = "qwen/qwen3-32b"
+    groq_model: str = "llama-3.1-8b-instant"
     memory_groq_model: str = "llama-3.1-8b-instant"
     llm_temperature: float = 0.2
 
 
     openai_api_key: str = ""
     google_api_key: str = ""
-    google_embedding_model: str = "gemini-embedding-2"
+    google_embedding_model: str = "gemini-embedding-001"
     enable_local_embeddings: bool = False
 
     workspace_dir: Path = Path(__file__).resolve().parents[2]
@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     api_port: int = 8000
 
     dashboard_api_url: str = "http://localhost:8000"
+    guardrails_enabled: bool = True
+    trace_enabled: bool = True
+    trace_dir: Path = Path("data/traces")
+    tracer_enabled: bool | None = None
+    tracer_dir: Path | None = None
 
     def resolve(self, path: Path) -> Path:
         """Resolve relative paths against the project root."""
@@ -65,19 +70,26 @@ class Settings(BaseSettings):
         return self.resolve(self.knowledge_base_dir)
 
     @property
+    def trace_dir_path(self) -> Path:
+        return self.resolve(self.trace_dir)
+
+    @property
+    def tracer_dir_path(self) -> Path:
+        return self.resolve(self.tracer_dir or self.trace_dir)
+
+    @property
     def effective_google_embedding_model(self) -> str:
         """
         Normalize and auto-upgrade legacy embedding model IDs to a supported Gemini model.
         """
         model = (self.google_embedding_model or "").strip()
         if not model:
-            return "gemini-embedding-2"
+            return "gemini-embedding-001"
 
         if model.startswith("models/"):
             model = model[len("models/") :]
 
         deprecated_aliases = {
-            "gemini-embedding-001",
             "text-embedding-004",
             "embedding-001",
             "embedding-gecko-001",
@@ -85,7 +97,7 @@ class Settings(BaseSettings):
             "gemini-embedding-exp-03-07",
         }
         if model in deprecated_aliases:
-            return "gemini-embedding-2"
+            return "gemini-embedding-001"
 
         return model
 
@@ -103,5 +115,6 @@ def ensure_directories(settings: Settings | None = None) -> None:
         config.chroma_rag_path,
         config.chroma_mem0_path,
         config.knowledge_base_path,
+        config.trace_dir_path
     ):
         path.mkdir(parents=True, exist_ok=True)
